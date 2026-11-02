@@ -5,7 +5,6 @@ import base64
 import json
 import os
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime, timedelta
 from datetime import datetime
 from aiogram import Bot, Dispatcher, F, Router
