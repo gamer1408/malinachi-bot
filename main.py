@@ -37,19 +37,14 @@ ADMIN_IDS = [6150118850]          # Admin Telegram ID raqamlari
 # Google Sheets ulanishi
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 
-creds_base64 = os.getenv("GSPREAD_CREDENTIALS_BASE64")
+client = gspread.service_account(filename="credentials.json")
 
-if creds_base64:
-    # Render muhitida Base64 orqali to'g'ridan-to'g'ri o'qish
-    creds_dict = json.loads(base64.b64decode(creds_base64).decode("utf-8"))
-    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
-else:
-    # Mahalliy kompyuterda fayldan o'qish
-    creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
-
-client = gspread.authorize(creds)
 spreadsheet = client.open(SHEET_NAME)
 sheet = spreadsheet.sheet1
+try:
+    zaklad_sheet = spreadsheet.worksheet("Zakladlar")
+except Exception:
+    zaklad_sheet = None
 
 # 'Zakladlar' nomli varaqni tekshirish yoki ochish
 try:
