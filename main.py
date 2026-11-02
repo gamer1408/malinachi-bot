@@ -43,7 +43,7 @@ creds_base64 = os.getenv("GSPREAD_CREDENTIALS_BASE64")
 if creds_base64:
     # Render muhitida Base64 orqali to'g'ridan-to'g'ri o'qish
     creds_dict = json.loads(base64.b64decode(creds_base64).decode("utf-8"))
-    creds = ServiceAccountCredentials.from_json_keyentry(creds_dict, scope)
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
 else:
     # Mahalliy kompyuterda fayldan o'qish
     creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
