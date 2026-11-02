@@ -1,12 +1,9 @@
 import asyncio
 import logging
 import os
-import base64
-import json
-import os
-import gspread
+import html
 from datetime import datetime, timedelta
-from datetime import datetime
+from aiohttp import web
 from aiogram import Bot, Dispatcher, F, Router
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
@@ -24,8 +21,8 @@ from aiogram.types import (
     InlineKeyboardButton,
     FSInputFile
 )
+
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
 
 # --- SOZLAMALAR ---
 BOT_TOKEN = os.getenv("BOT_TOKEN", "8897760213:AAFvcSo11EzLnyJQcECbFRSFbM6kXnZDVXI")
@@ -34,24 +31,20 @@ ORDERS_CHANNEL_ID = -5437468163   # Yangi buyurtmalar kanali ID
 ZAKLAD_CHANNEL_ID = -5517056199   # To'lov cheklari va tasdiqlash guruhi ID
 ADMIN_IDS = [6150118850]          # Admin Telegram ID raqamlari
 
-# Google Sheets ulanishi
-scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-
+# Google Sheets ulanishi (Standart gspread orqali)
 client = gspread.service_account(filename="credentials.json")
-
 spreadsheet = client.open(SHEET_NAME)
 sheet = spreadsheet.sheet1
-try:
-    zaklad_sheet = spreadsheet.worksheet("Zakladlar")
-except Exception:
-    zaklad_sheet = None
 
-# 'Zakladlar' nomli varaqni tekshirish yoki ochish
+# 'Zakladlar' varag'ini tekshirish yoki avtomatik yaratish
 try:
     zaklad_sheet = spreadsheet.worksheet("Zakladlar")
 except gspread.exceptions.WorksheetNotFound:
     zaklad_sheet = spreadsheet.add_worksheet(title="Zakladlar", rows=1000, cols=10)
     zaklad_sheet.append_row(["Telegram ID", "Ko'chatlar soni", "Har bir narxi", "Zaklad summasi", "Sana", "Holati"])
+except Exception as e:
+    logging.warning(f"Zakladlar varag'ini ochishda ogohlantirish: {e}")
+    zaklad_sheet = None
 
 # Botni ishga tushirish (Default HTML parse mode bilan)
 bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
@@ -631,12 +624,27 @@ async def process_plus(message: Message, state: FSMContext):
 
     await state.clear()
 
+
+
 @router.message(Form.final_plus)
 async def wrong_plus_input(message: Message):
     await message.answer("Davom etish uchun shunchaki '+' belgisini yuboring.")
 
-# --- ASOSIY FUNKSIYA ---
+# Render port tekshirganda 200 OK qaytaruvchi soxta server
+async def ping_server():
+    app = web.Application()
+    app.router.add_get("/", lambda r: web.Response(text="Bot is running!"))
+    runner = web.AppRunner(app)
+    await runner.setup()
+    port = int(os.getenv("PORT", 10000))
+    site = web.TCPSite(runner, "0.0.0.0", port)
+    await site.start()
+
 async def main():
+    # 1. Renderni tinchlantirish uchun soxta veb-portni yoqamiz
+    await ping_server()
+    
+    # 2. Botni doimiy polling rejimida ishga tushiramiz
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
