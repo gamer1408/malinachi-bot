@@ -1,6 +1,11 @@
 import asyncio
 import logging
 import os
+import base64
+import json
+import os
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime, timedelta
 from datetime import datetime
 from aiogram import Bot, Dispatcher, F, Router
@@ -32,7 +37,17 @@ ADMIN_IDS = [6150118850]          # Admin Telegram ID raqamlari
 
 # Google Sheets ulanishi
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
+
+creds_base64 = os.getenv("GSPREAD_CREDENTIALS_BASE64")
+
+if creds_base64:
+    # Render muhitida Base64 orqali to'g'ridan-to'g'ri o'qish
+    creds_dict = json.loads(base64.b64decode(creds_base64).decode("utf-8"))
+    creds = ServiceAccountCredentials.from_json_keyentry(creds_dict, scope)
+else:
+    # Mahalliy kompyuterda fayldan o'qish
+    creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
+
 client = gspread.authorize(creds)
 spreadsheet = client.open(SHEET_NAME)
 sheet = spreadsheet.sheet1
